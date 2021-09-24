@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Title</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+</head>
+
+<body>
+<div id="box" class="container">
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            数据集中处理
+        </div>
+        <div class="panel-body">
+            <add :my_data="parent" @my_event="showData" @recovery="init" @search_data="showData1"></add>
+        </div>
+        <table class="table table-striped table-bordered table-hover text-center">
+            <thead>
+            <tr>
+                <th class="text-center">序号</th>
+                <th class="text-center">名字</th>
+                <th class="text-center">年龄</th>
+                <th class="text-center">操作</th>
+                <th class="text-center">id</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="(el,i) in subArr" :key="el.id">
+                <td>{{curPage*pageSize+i+1}}</td>
+                <td>{{el.username}}</td>
+                <td>{{el.age}}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" @click="del(el.id)">删除</button>
+                    <button class="btn btn-info btn-sm" data-toggle="modal" data-target="#edit"
+                            @click="editReady(el.id)">编辑
+                    </button>
+                </td>
+                <td>
+                    {{el.id}}
+                </td>
+            </tr>
+            <tr v-show="!json.length">
+                <td colspan="5">暂无数据</td>
+            </tr>
+            <tr v-show="json.length">
+                <td colspan="5">
+                    <button class="btn btn-danger btn-sm"
+                            @click="delAll">全部删除
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="text-center">
+            <ul class="pagination pagination-sm">
+                <li :class="curPage==i-1?'active':''" v-for="i in maxPage">
+                    <a href="##" @click.prevent="curPage=i-1">{{i | changeName(maxPage)}}</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div role="dialog" class="modal fade bs-example-modal-sm" id="edit">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                    <h4 class="modal-title">请编辑</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="form1" class="form-horizontal" role="form">
+                        <div class="form-group has-feedback">
+                            <label class="col-sm-3 control-label">姓名：</label>
+                            <div class="col-sm-9 require">
+                                <input type="text" class="form-control" v-model="editName">
+                            </div>
+                        </div>
+                        <div class="form-group has-feedback">
+                            <label class="col-sm-3 control-label">年龄：</label>
+                            <div class="col-sm-9 require">
+                                <input v-model="editAge" type="text" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-xs-3 col-sm-offset-3">
+                                <button data-dismiss="modal" class="btn btn-default btn-sm">取消</button>
+                            </div>
+                            <div class="col-xs-3">
+                                <button type="button" @click="edit(index)" data-dismiss="modal"
+                                        class="btn btn-primary submit">
+                                    修改
+                                </button>
+                            </div>
+                            <div class="col-xs-3">
+                                <button type="reset" class="btn btn-default reset">重置</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<template id="addData">
+    <form class="form-horizontal" role="form">
+        <div class="form-group has-feedback">
+            <label class="col-sm-2 control-label">用户名：</label>
+            <div class="col-sm-10">
+                <input v-model="username" class="form-control">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label">年龄：</label>
+            <div class="col-sm-10">
+                <input v-model="age" type="number" class="form-control">
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-10 col-sm-offset-2">
+                <button type="button" @click="add" class="btn btn-primary">添加</button>
+                <button type="reset" class="btn btn-default">重置</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-8 col-sm-offset-2">
+                <input type="text" class="form-control" v-model="keyword">
+            </div>
+            <div class="col-sm-2">
+                <button type="button" @click="search" class="btn btn-default">搜索</button>
+                <button type="button" @click="init" class="btn btn-default">复原</button>
+            </div>
+        </div>
+    </form>
+</template>
+
+<script src="js/vue.js"></script>
+<script src="js/jquery-1.7.2.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script>
+    const add = {
+        template: '#addData',
+        data() {
+            return {
+                username: '',
+                age: 20,
+                keyword: '',
+            }
+        },
+        props:['my_data'],
+        methods: {
+            add() {
+                let id = 1;
+                let arr = [];
+                let myJson = localStorage.getItem('myJson');
+                if (myJson) {
+                    arr = JSON.parse(myJson);
+                    id = arr[0].id + 1;
+                }
+                arr.unshift({id, username: this.username, age: this.age})
+                localStorage.setItem('myJson', JSON.stringify(arr));
+                this.$emit('my_event', true);
+            },
+            init() {
+                this.$emit('recovery')
+            },
+            search() {
+                alert(this.my_data)
+                let arr = localStorage.getItem('myJson')
+                if (arr) {
+                    arr = JSON.parse(arr);
+                    arr = arr.filter(el => {
+                        if (el.username.indexOf(this.keyword) >= 0) return el;
+                    });
+                    this.$emit('search_data',arr);
+                }
+            }
+        }
+    }
+    new Vue({
+        el: '#box',
+        data: {
+            curPage: 0,
+            pageSize: 3,
+            maxPage: 0,
+            json: [],
+            editName: '',
+            editAge: '',
+            index: 0,
+            parent:'我是父组件的数据'
+        },
+        methods: {
+            del(id) {
+                if (confirm("你确信要删除吗")) {
+                    const index = this.json.findIndex(el => {
+                        if (el.id === id) return true
+                    });
+                    this.json.splice(index, 1);
+                    this.maxPage = Math.ceil(this.json.length / this.pageSize);
+                    if (this.curPage === this.maxPage) this.curPage--
+                    localStorage.setItem('myJson', JSON.stringify(this.json));
+                }
+            },
+            editReady(id) {
+                const index = this.json.findIndex(el => {
+                    if (el.id === id) return true
+                });
+                this.editName = this.json[index].username;
+                this.editAge = this.json[index].age;
+                this.index = index
+            },
+            edit(i) {
+                this.json[i].username = this.editName;
+                this.json[i].age = this.editAge;
+                localStorage.setItem('myJson', JSON.stringify(this.json));
+            },
+            delAll() {
+                if (confirm('你真的要全部删除吗')) {
+                    this.json = [];
+                    localStorage.removeItem('myJson');
+                    this.maxPage = 0;
+                    this.curPage = 0;
+                }
+            },
+            showData(flag) {
+                if (flag) this.init()
+            },
+            showData1(arr) {
+                this.json=arr;
+                this.maxPage = Math.ceil(arr.length / this.pageSize);
+                this.curPage = 0
+            },
+            init() {
+                let myJson = localStorage.getItem('myJson');
+                if (myJson) {
+                    this.json = JSON.parse(myJson);
+                }
+                this.maxPage = Math.ceil(this.json.length / this.pageSize);
+                this.curPage = 0
+            }
+        },
+        mounted() {
+            this.init()
+        },
+        components: {
+            add
+        },
+        computed: {
+            subArr() {
+                let start = this.curPage * this.pageSize;
+                return this.json.slice(start, start + this.pageSize)
+            }
+        },
+        filters: {
+            changeName(i, maxPage) {
+                if (i === 1)
+                    return '首页';
+                else if (i === maxPage)
+                    return '尾页';
+                else
+                    return i;
+            }
+        }
+    })
+</script>
+</body>
+</html>
