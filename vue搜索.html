@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js"></script>
+    <!-- <script src="vue/vue-resource.min.js"></script> -->
+    <!-- <script src="vue/vue.js"></script> -->
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+	<script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+	<script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <style>
+        *{
+            padding: 0;
+            margin: 0;
+        }
+        div.container{
+            margin: 50px auto;
+            width: 400px;
+        }
+        ul {
+            list-style: none;
+            width: inherit;
+            line-height: 30px;
+            padding: 0;
+            margin: i0px 0;
+        }
+        input{
+            width: 400px;
+            height: 30px;
+            border-radius: 5px;
+            border-color: gray;
+        }
+        li.gray {
+            background-color: #ccc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="box">
+        <input type="text" v-model='keyword' @keyup.prevent='search($event)' @keydown.down.prevent='changeDown' @keydown.up.prevent='changeUp'>
+        <ul>
+            <li v-for="(el,index) in arr" v-bind:class="{ gray: index==current}">{{el}}</li>
+        </ul>
+    </div>
+   
+</body>
+
+</html>
+<script>
+    new Vue({
+        el: '#box',
+        data: {
+            keyword: '',
+            arr: [],
+            current: -1
+        },
+        methods: {
+            search: function (ev) {
+                if (ev.keyCode == 38 || ev.keyCode == 40) return
+                if (ev.keyCode == 13) {
+                    window.open('https://www.baidu.com/s?wd=' + this.keyword, '_blank');
+                    this.keyword = '';
+                    return
+                }
+                this.$http.jsonp('https://www.baidu.com/su', {//https://sp0.baidu.com/5a1Fazu8AA54nxGko9WTAnF6hhy/su
+                    params: {
+                        wd: this.keyword
+                    },
+                    jsonp: 'cb'
+                }).then(function (rs) {
+                    console.log(rs.body.s);
+                    this.arr = rs.body.s
+                }, function (err) {
+                    console.log(err)
+                })
+            },
+            changeDown:function(){
+                if(this.current==this.arr.length-1){
+                    this.current=0
+                }
+                else{
+                    this.current++
+                }
+                this.keyword=this.arr[this.current]
+            },
+            changeUp:function(){
+                if(this.current==0){
+                    this.current=this.arr.length-1
+                }
+                else{
+                    this.current--
+                }
+                this.keyword=this.arr[this.current]
+            }
+        }
+    })
+</script>
